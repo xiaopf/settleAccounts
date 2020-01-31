@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import './Detail.dart';
 
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
@@ -81,7 +82,7 @@ class _HomeState extends State<Home> {
         await _removeActive(index);
         Scaffold.of(context).showSnackBar(
           SnackBar(
-            content: Text('${active['title']}被删除了'),
+            content: Text('${active["title"]}被删除了'),
             duration: Duration(milliseconds: 500)
           )
         );
@@ -91,6 +92,12 @@ class _HomeState extends State<Home> {
         child: Column(
           children: <Widget>[
             ListTile (
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Detail(index: index))
+                );
+              },
               contentPadding: EdgeInsets.all(8.0),
               title: Text(
                 active['title'],
@@ -151,7 +158,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('新增事件'),
+        title: Text('活动'),
       ),
       body: ListView.builder(
         itemCount: _activeList.length > 0 ?_activeList.length : 1,
