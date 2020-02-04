@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import './Consumption.dart';
+import './Result.dart';
 class Detail extends StatefulWidget {
   final index;
   Detail({Key key, this.index}) : super(key: key);
@@ -24,7 +25,7 @@ class _DetailState extends State<Detail> {
     
     _readData().then((List value){
       activeIndex = widget.index;
-      // print(value);
+      print(value);
       setState((){
         _activeList = value;
         _title = value[activeIndex]['title'];
@@ -110,10 +111,12 @@ class _DetailState extends State<Detail> {
                   context,
                   MaterialPageRoute(builder: (context) => Consumption(detail: detail))
                 );
-                setState(() {
-                  _detailList[index] = modifiedDetail;
-                });
-                await (await _getLocalFile()).writeAsString(json.encode(_activeList));
+                if(modifiedDetail is Map){
+                  setState(() {
+                    _detailList[index] = modifiedDetail;
+                  });
+                  await (await _getLocalFile()).writeAsString(json.encode(_activeList));
+                }
               },
               contentPadding: EdgeInsets.all(8.0),
               title: Text(
@@ -146,7 +149,10 @@ class _DetailState extends State<Detail> {
           IconButton(
             icon: Icon(Icons.iso),
             onPressed: (){
-              // print(111);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Result(index: activeIndex))
+              );
             },
           )
         ],
