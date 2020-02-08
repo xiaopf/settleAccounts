@@ -171,7 +171,9 @@ class _DetailState extends State<Detail> {
             context,
             MaterialPageRoute(builder: (context) => Consumption())
           );
-          _addDetail(detailItem);
+          if (detailItem is Map) {
+            _addDetail(detailItem);
+          }
         },
         tooltip: '添加明细',
         child: Icon(Icons.add),

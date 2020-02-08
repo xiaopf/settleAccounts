@@ -13,8 +13,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List _activeList;
+  List _activeList = [];
   String _activeTitle;
+  bool isEdit = false;
 
   @override
   void initState() { 
@@ -48,7 +49,12 @@ class _HomeState extends State<Home> {
     });
     await (await _getLocalFile()).writeAsString(json.encode(_activeList));
   }
-
+  Future<Null> _modifyActive(int index, String title) async {
+    setState(() {
+      _activeList[index]['title'] = title;
+    });
+    await (await _getLocalFile()).writeAsString(json.encode(_activeList));
+  }
   Future<Null> _removeActive(index) async {
     setState(() {
       _activeList.removeAt(index);
@@ -93,17 +99,21 @@ class _HomeState extends State<Home> {
           children: <Widget>[
             ListTile (
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Detail(index: index))
-                );
+                if (isEdit) {
+                  _showAlertDialog(context, index);
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => Detail(index: index))
+                  );
+                }
               },
               contentPadding: EdgeInsets.all(8.0),
               title: Text(
                 active['title'],
                 style: TextStyle(fontWeight: FontWeight.w400,fontSize: 18.0)
               ),
-              trailing: Icon(Icons.arrow_forward_ios)
+              trailing: isEdit ? Icon(Icons.edit) : Icon(Icons.arrow_forward_ios) 
             ),
             Divider(
               height: 0.0,
@@ -115,8 +125,9 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _showAlertDialog(BuildContext context) {
+  void _showAlertDialog(BuildContext context, [int index]) {
     final TextEditingController _controller = TextEditingController();
+    _controller.text = index is int ? _activeList[index]['title'] : '';
     _controller.addListener((){
       setState((){
         _activeTitle = _controller.text;
@@ -145,8 +156,15 @@ class _HomeState extends State<Home> {
           new FlatButton(
             child: new Text("确定"),
             onPressed: () async{
-              await _addActive({"title": _activeTitle});
+              if (isEdit) {
+                await _modifyActive(index, _activeTitle);
+              } else {
+                await _addActive({"title": _activeTitle});
+              }
               Navigator.of(context).pop();
+              setState(() {
+                isEdit = false;
+              });
             },
           ),
         ],
@@ -158,7 +176,17 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('活动'),
+        title: Text('活动列表'),
+        actions: <Widget>[
+          IconButton(
+            icon: isEdit ? Icon(Icons.check) : Icon(Icons.edit),
+            onPressed: (){
+              setState(() {
+                isEdit = !isEdit;
+              });
+            },
+          )
+        ],
       ),
       body: ListView.builder(
         itemCount: _activeList.length > 0 ?_activeList.length : 1,

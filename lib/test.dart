@@ -45,18 +45,25 @@ Map result () {
       } else {
         value = key == payer ? money - average : -average;
       }
-      
+      print(resultMap);
       if (resultMap[key] == null) {
-        resultMap[key] = value;
+        resultMap[key] = List(2);
+        resultMap[key][0] = value;
       } else {
-        resultMap[key] += value;
+        resultMap[key][0] += value;
       }    
+
+      if (key == payer) {
+        resultMap[key][1] = money;
+      } else {
+        resultMap[key][1] = 0;
+      }
     }
   });
   return resultMap;
 }
 
 void main () {
-  // Map resultMap = result();
-  print((20/3).toStringAsFixed(1));
+  Map resultMap = result();
+  print(resultMap);
 }

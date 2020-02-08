@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:flutter/rendering.dart';
+import 'dart:ui';
+ import 'package:flutter/services.dart';
 class Result extends StatefulWidget {
   final index;
   Result({Key key, this.index}) : super(key: key);
@@ -13,8 +16,10 @@ class Result extends StatefulWidget {
 }
 
 class _DetailState extends State<Result> {
+  GlobalKey rootWidgetKey = GlobalKey();
   int activeIndex;
   Map _resultMap = {};
+  List _detailList = [];
   String _title = '';
 
   @override
@@ -26,8 +31,8 @@ class _DetailState extends State<Result> {
       print(value);
       setState((){
         _title = value[activeIndex]['title'];
-        List detailList = value[activeIndex]['detailList'];
-        _resultMap = calculate(detailList);
+        _detailList = value[activeIndex]['detailList'];
+        _resultMap = calculate(_detailList);
         print(_resultMap);
       });
     });
@@ -54,14 +59,17 @@ class _DetailState extends State<Result> {
           } else {
             value = key == payer ? money - average : -average;
           }
-
-          print('value $value');
-          
           if (resultMap[key] == null) {
-            resultMap[key] = value;
+            resultMap[key] = List(2);
+            resultMap[key][0] = value;
           } else {
-            resultMap[key] += value;
-          }    
+            resultMap[key][0] += value;
+          }
+          if (key == payer) {
+            resultMap[key][1] = money;
+          } else {
+            resultMap[key][1] = 0;
+          }
         }
       });
     return resultMap;
@@ -83,30 +91,39 @@ class _DetailState extends State<Result> {
     }
   }
 
-  List _tableRowList() {
+  List _detailTableRowList() {
     List<TableRow> rowList = [
       TableRow(
         //第一行样式 添加背景色
         decoration: BoxDecoration(
-          color: Colors.blueGrey,
+          color: Colors.cyan[50],
         ),
         children: [
           SizedBox(
-            height: 30.0,
+            height: 38.0,
             child: Center(
-              child:Text('参与人',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+              child:Text(
+                '参与人',
+                style: TextStyle(fontSize: 18.0,fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           SizedBox(
-            height: 30.0,
+            height: 38.0,
             child: Center(
-              child: Text('花费',style: TextStyle(fontWeight: FontWeight.bold),),
+              child: Text(
+                '垫付',
+                style: TextStyle(fontSize: 18.0,fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           SizedBox(
-            height: 30.0,
+            height: 38.0,
             child: Center(
-              child: Text('结算',style: TextStyle(fontWeight: FontWeight.bold),),
+              child: Text(
+                '结算',
+                style: TextStyle(fontSize: 18.0,fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ]
@@ -118,21 +135,29 @@ class _DetailState extends State<Result> {
         TableRow(
           children: [
             SizedBox(
-              height: 25.0,
+              height: 36.0,
               child:Center(
-                child: Text(key),
-            ),
-            ),
-            SizedBox(
-              height: 25.0,
-              child:Center(
-                child: Text(value.toStringAsFixed(1), style: TextStyle(color:value > 0 ? Colors.green : Colors.red)),
+                child: Text(
+                  key,
+                  style: TextStyle(fontSize: 18.0),
+                ),
               ),
             ),
             SizedBox(
-              height: 25.0,
+              height: 36.0,
               child:Center(
-                child: Text(value.toStringAsFixed(1), style: TextStyle(color:value > 0 ? Colors.green : Colors.red)),
+                child: Text(
+                  value[1].toStringAsFixed(1),
+                  style: TextStyle(fontSize: 18.0),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 36.0,
+              child:Center(
+                child: Text(value[0].toStringAsFixed(1),
+                style: TextStyle(fontSize: 18.0, color:value[0] > 0 ? Colors.green : Colors.red)
+                ),
               ),
             ),
           ]
@@ -141,27 +166,158 @@ class _DetailState extends State<Result> {
     });
     return rowList;
   }
+  Widget _tips() {
+    double error = 0;
+    _resultMap.forEach((key,value){
+      error += value[0];
+    });
+    return error == 0 ?
+     Text('') :
+     Text(
+      '*由于平均值计算,所以计算结果有误差$error',
+      style: TextStyle(fontSize:16.0 ,color: Colors.red)
+    );
+  }
+  List _overviewTableRowList() {
+    List<TableRow> rowList = [
+      TableRow(
+        children: [
+          SizedBox(
+            height: 38.0,
+            child: Center(
+              child:Text(
+                '活动总览',
+                style: TextStyle(fontSize: 18.0,fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ]
+      )
+    ];
 
+    _detailList.asMap().forEach((index, detail){
+      rowList.add(
+        TableRow(
+          children: [
+            SizedBox(
+              height: 36.0,
+              child:Container(
+                padding: EdgeInsets.only(left: 16.0, right: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      "${detail['detailName']} (${detail['partner'].length}人)",
+                      style: TextStyle(fontSize: 18.0),
+                    ),
+                    Text(
+                      detail['money'].toStringAsFixed(1),
+                      style: TextStyle(fontSize: 18.0),
+                    ),
+                  ],
+                )
+              ),
+            ),
+          ]
+        )
+      );
+    });
+    return rowList;
+  }
+  // _capturePng() async {
+  //   try {
+  //     RenderRepaintBoundary boundary = rootWidgetKey.currentContext.findRenderObject();
+  //     var image = await boundary.toImage(pixelRatio: 3.0);
+  //     ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
+  //     Uint8List pngBytes = byteData.buffer.asUint8List();
+  //     return pngBytes;
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  //   return null;
+  // }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('$_title结算结果'),
+        // actions: <Widget>[
+        //   IconButton(
+        //     icon: Icon(Icons.share),
+        //     onPressed: () {
+        //       Uint8List img = _capturePng();
+        //       print(img);
+        //       // Clipboard.setData(ClipboardData(text: img.toString()));
+        //     },
+        //   )
+        // ],
       ),
-      body: Container (
-        child: Column(
+      body: RepaintBoundary(
+        key: rootWidgetKey,
+        child: ListView(
           children: <Widget>[
-            Table(
-              border: TableBorder.all(
-                color: Colors.grey,
-                width: 2.0,
-                style: BorderStyle.solid,
-              ),
-              children: _tableRowList(),
-            )
+            Container (
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                children: <Widget>[
+                  Table(
+                    border: TableBorder.all(
+                      color: Colors.grey,
+                      width: 2.0,
+                      style: BorderStyle.solid,
+                    ),
+                    children: _overviewTableRowList(),
+                  ),
+                  Table(
+                    border: TableBorder(
+                      left: BorderSide(
+                        color: Colors.grey,
+                        width: 2.0,
+                        style: BorderStyle.solid,
+                      ),
+                      right: BorderSide(
+                        color: Colors.grey,
+                        width: 2.0,
+                        style: BorderStyle.solid,
+                      )
+                    ),
+                    children: <TableRow>[
+                      TableRow(
+                        children: [
+                          SizedBox(
+                            height: 38.0,
+                            child: Center(
+                              child:Text(
+                                '人员明细',
+                                style: TextStyle(fontSize: 18.0,fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ]
+                      ),
+                    ],
+                  ),
+                  Table(
+                    border: TableBorder.all(
+                      color: Colors.grey,
+                      width: 2.0,
+                      style: BorderStyle.solid,
+                    ),
+                    children: _detailTableRowList(),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(8.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _tips(),
+                    )
+                  )
+                ],
+              )
+            ),
           ],
         )
-      ),
+      )  
     );
   }
 }
