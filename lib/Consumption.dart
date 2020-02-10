@@ -49,11 +49,28 @@ class _ConsumptionState extends State<Consumption> {
         'partner': _partnerJoined,
         'note': note
       };
-      // print(data);
       Navigator.of(context).pop(data);
     }
   }
 
+  Future<bool> _onBackPressed() {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('确定离开本页面?'),
+        actions: <Widget>[
+          FlatButton(
+              child: Text('暂不'),
+              onPressed: () => Navigator.pop(context, false),
+          ),
+          FlatButton(
+              child: Text('确定'),
+              onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      )
+    );
+  }
   @override
   Widget build(BuildContext context) {
     _controllerPayer.addListener(_setTextFieldValue);
@@ -73,6 +90,7 @@ class _ConsumptionState extends State<Consumption> {
       body: Container(
         padding: EdgeInsets.all(16.0),
         child: Form(
+          onWillPop: _onBackPressed,
           key: detailKey,
           child: Column(
             children: <Widget>[
@@ -83,7 +101,7 @@ class _ConsumptionState extends State<Consumption> {
                   icon: Icon(Icons.local_activity)
                 ),
                 onSaved: (value) {
-                  detailName = value;
+                  detailName = value.trim();
                 },
                 validator: (value) {
                   return value.length == 0 ? '明细名称不能为空' : null;

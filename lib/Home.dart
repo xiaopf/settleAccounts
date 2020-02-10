@@ -20,13 +20,15 @@ class _HomeState extends State<Home> {
   @override
   void initState() { 
     super.initState();
-    _readData().then((List value){
-      setState((){
-        _activeList = value;
-      });
-    });
+    _updateActiveList();
   }
 
+  void _updateActiveList() async{
+    List list = await _readData();
+    setState((){
+        _activeList = list;
+    });
+  }
   Future<File> _getLocalFile() async {
     String dir = (await getApplicationDocumentsDirectory()).path;
     return new File('$dir/activeList.json');
@@ -80,32 +82,23 @@ class _HomeState extends State<Home> {
       );
     }
     final active = _activeList[index];
-    return Dismissible(
-      key: Key(active['title']),
-      background: Container(color: Colors.red,),
-      direction:DismissDirection.endToStart,
-      onDismissed: (direction) async{
-        await _removeActive(index);
-        Scaffold.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${active["title"]}被删除了'),
-            duration: Duration(milliseconds: 500)
-          )
-        );
-      },
-      child: Container(
+    // 将公共部分提出来
+    Widget _listItem () {
+      return Container(
         color: Colors.white10,
         child: Column(
           children: <Widget>[
             ListTile (
-              onTap: () {
+              onTap: () async {
                 if (isEdit) {
                   _showAlertDialog(context, index);
                 } else {
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => Detail(index: index))
                   );
+                  // 更新一下最新的activeList
+                  _updateActiveList();
                 }
               },
               contentPadding: EdgeInsets.all(8.0),
@@ -121,8 +114,24 @@ class _HomeState extends State<Home> {
             ),
           ],
         )
-      ),
-    );
+      );
+    }
+    return isEdit ? _listItem() :
+      Dismissible(
+        key: Key(active['title']),
+        background: Container(color: Colors.red,),
+        direction:DismissDirection.endToStart,
+        onDismissed: (direction) async{
+          await _removeActive(index);
+          Scaffold.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${active["title"]}被删除了'),
+              duration: Duration(milliseconds: 500)
+            )
+          );
+        },
+        child: _listItem()
+      );
   }
 
   void _showAlertDialog(BuildContext context, [int index]) {
@@ -130,7 +139,7 @@ class _HomeState extends State<Home> {
     _controller.text = index is int ? _activeList[index]['title'] : '';
     _controller.addListener((){
       setState((){
-        _activeTitle = _controller.text;
+        _activeTitle = _controller.text.trim();
       });
     });
     showDialog(
@@ -142,9 +151,6 @@ class _HomeState extends State<Home> {
           maxLength: 30,
           maxLines: 1,
           autofocus: true,
-          onChanged: (text) {
-            print(text);
-          },
         ),
         actions: <Widget>[
           new FlatButton(
@@ -178,27 +184,41 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text('活动列表'),
         actions: <Widget>[
-          IconButton(
-            icon: isEdit ? Icon(Icons.check) : Icon(Icons.edit),
-            onPressed: (){
-              setState(() {
-                isEdit = !isEdit;
-              });
-            },
-          )
+          _activeList.length == 0 ? Text('') :
+            IconButton(
+              icon: isEdit ? Icon(Icons.check) : Icon(Icons.edit),
+              onPressed: (){
+                setState(() {
+                  isEdit = !isEdit;
+                });
+              },
+            )
         ],
       ),
       body: ListView.builder(
         itemCount: _activeList.length > 0 ?_activeList.length : 1,
         itemBuilder: _activeWidgetList,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAlertDialog(context);
-        },
-        tooltip: '新增事件',
-        child: Icon(Icons.add),
-      ),
+      floatingActionButton: Builder(
+        builder: (BuildContext context) {
+          return FloatingActionButton(
+            onPressed: () {
+              if (!isEdit) {
+                _showAlertDialog(context);
+              } else {
+                Scaffold.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('请点击具体活动修改活动名称'),
+                    duration: Duration(milliseconds: 2000)
+                  )
+                );
+              }
+            },
+            tooltip: '新增事件',
+            child: Icon(Icons.add),
+          );
+        }
+      )
     );
   }
 }

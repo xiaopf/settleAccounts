@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import './Detail.dart';
+
 class Partner extends StatefulWidget {
   final params;
   Partner({Key key, this.params}) : super(key: key);
@@ -107,7 +107,6 @@ class _PartnerState extends State<Partner> {
                     _selectedItem.add(partner);
                   }
                 });
-                // print(_selectedItem);
               },
               contentPadding: EdgeInsets.all(8.0),
               title: Text(
@@ -117,7 +116,6 @@ class _PartnerState extends State<Partner> {
               leading: Checkbox(
                 value: partnerIsJoined,
                 onChanged: (value) {
-                  // print(_selectedItem);
                 }
               )
             ),
@@ -135,7 +133,7 @@ class _PartnerState extends State<Partner> {
     final TextEditingController _controller = TextEditingController();
     _controller.addListener((){
       setState((){
-        _partnerName = _controller.text;
+        _partnerName = _controller.text.trim();
       });
     });
     showDialog(

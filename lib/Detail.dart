@@ -25,7 +25,6 @@ class _DetailState extends State<Detail> {
     
     _readData().then((List value){
       activeIndex = widget.index;
-      print(value);
       setState((){
         _activeList = value;
         _title = value[activeIndex]['title'];
@@ -146,15 +145,16 @@ class _DetailState extends State<Detail> {
       appBar: AppBar(
         title: Text('$_title活动明细'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.iso),
-            onPressed: (){
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Result(index: activeIndex))
-              );
-            },
-          )
+          _detailList.length == 0 ? Text('') :
+            IconButton(
+              icon: Icon(Icons.iso),
+              onPressed: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Result(index: activeIndex))
+                );
+              },
+            )
         ],
       ),
       body: ListView.builder(

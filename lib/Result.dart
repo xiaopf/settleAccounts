@@ -28,12 +28,10 @@ class _DetailState extends State<Result> {
     
     _readData().then((List value){
       activeIndex = widget.index;
-      print(value);
       setState((){
         _title = value[activeIndex]['title'];
         _detailList = value[activeIndex]['detailList'];
         _resultMap = calculate(_detailList);
-        print(_resultMap);
       });
     });
   }
@@ -240,7 +238,7 @@ class _DetailState extends State<Result> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('$_title结算结果'),
+        title: Text('$_title结算'),
         // actions: <Widget>[
         //   IconButton(
         //     icon: Icon(Icons.share),
